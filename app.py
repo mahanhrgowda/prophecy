@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from datetime import datetime
+from datetime import datetime  # Still used for positive years where possible, but avoided for extremes
 import random
 
 # Emojis for fun - even more added for engagement! 🎉😄
@@ -25,8 +24,8 @@ yuga_explanations = {
     "Descending Dwapara Yuga": "⚔️🔥 The Bronze Age of Balance! 🔄 Half virtue, half vice – conflicts brew, but knowledge from scriptures saves the day. Tech and wars mix! 🤖⚔️ Like Mahabharata battles – Krishna guiding through the chaos! 🛡️😲 A thrilling tug-of-war between good and evil! 🕺",
     "Descending Kali Yuga": "🌑😈 The Iron Age of Darkness! 😔 Only 25% dharma – short lives, greed, strife everywhere. Materialism rules, but it's the plot twist before the comeback! 💥🌪️ Think modern hustle with ancient warnings – time to wake up! ⏰ But hey, every storm passes! 🌧️➡️🌤️",
     "Ascending Kali Yuga": "🌒🌱 Rising from the Shadows! 📈 Slow recovery from chaos – seeds of hope planted, small improvements spark. Dharma starts climbing! 🌱😊 Like emerging from a long night, fresh starts and subtle shifts towards better days! 🌅 Exciting turnaround ahead! 🚀",
-    "Ascending Dwapara Yuga": "🛡️🚀 Rising Balance & Tech Boom! 🤝 Halfway to harmony – technology advances, conflicts resolve, knowledge explodes! 📚💡 We're in this now (2025 vibes!) – think AI, space, but with growing wisdom! 📡🌌 Super engaging era of innovation! 🎨",
-    "Ascending Treta Yuga": "🦸‍♂️💥 Rising Heroes & Strength! 💪 Virtue at 75% – great leaders, discoveries, epic comebacks. 📈🏆 Like future legends rising – adventures, breakthroughs, and moral wins! 🌟😄 Can't wait for this heroic upgrade! 🦸‍♀️",
+    "Ascending Dwapara Yuga": "🛡️🚀 Rising Balance & Tech Boom! 🤝 Halfway to harmony – technology advances, conflicts resolve, knowledge explodes! 📚💡 We're in this now (2025 vibes!) – think AI, space, but with growing wisdom! 🤖🌌 Super engaging era of innovation! 🎨",
+    "Ascending Treta Yuga": "🦸‍♂️💥 Rising Heroes & Strength! 💪 Virtue at 75% – great leaders, discoveries, epic comebacks. Dharma strengthens! 🏆 Like future legends rising – adventures, breakthroughs, and moral wins! 🌟😄 Can't wait for this heroic upgrade! 🦸‍♀️",
     "Ascending Satya Yuga": "✨🌈 Rising Back to Golden Bliss! 🕊️ Full dharma restored – long lives, universal peace, spiritual highs. Enlightenment for all! 😇🌍 Imagine a utopian future where harmony reigns supreme! 🎊 Pure joy and cosmic connection! 🔮",
     "End of Ascending Satya Yuga": "🏁🎉 Cycle Wrap-Up! 🔄 End of the full precession swing – ready for cosmic renewal. Party time before the next loop! 🥳🌌 Like finishing a grand adventure, only to start an even better one! 📖➡️📖"
 }
@@ -67,25 +66,28 @@ fun_facts = [
     "Kali Yuga: Chaos central, but ascent brings epic comebacks! 🌑➡️🌒💫🚀"
 ]
 
-# Convert dates to datetime for plotting and calculations
-def parse_date(date_str):
+# Parse year to numerical float (BCE negative, with fractional for month/day)
+def parse_year_num(date_str):
     if "BCE" in date_str:
-        year = -int(date_str.split(" BCE")[0])
+        year_str = date_str.split(" BCE")[0]
+        year = -int(year_str)
         month_day = date_str.split("-")[1:]
-        return datetime(year, int(month_day[0]), int(month_day[1]))
     else:
         parts = date_str.split(" CE-")
         year = int(parts[0])
         month_day = parts[1].split("-")
-        return datetime(year, int(month_day[0]), int(month_day[1]))
+    month = int(month_day[0])
+    day = int(month_day[1])
+    fractional = (month - 1) / 12 + day / 365.25
+    return year + fractional if year > 0 else year - fractional
 
 df = pd.DataFrame(yuga_data)
-df['Parsed Date'] = df['Start Date'].apply(parse_date)
+df['Year Num'] = df['Start Date'].apply(parse_year_num)
 
-# Function to find Yuga for a given date
-def find_yuga(input_date):
+# Function to find Yuga for a given numerical year
+def find_yuga(input_year_num):
     for i in range(len(df) - 1):
-        if df['Parsed Date'][i] <= input_date < df['Parsed Date'][i+1]:
+        if df['Year Num'][i] <= input_year_num < df['Year Num'][i+1]:
             return df['Yuga Phase'][i], yuga_emojis.get(df['Yuga Phase'][i], "🔄")
     return "Beyond the Cycle", "❓"
 
@@ -137,19 +139,17 @@ with st.expander("Clue 3: Precession & Yuga Tie-In! 🌀🔗"):
 
 st.write("This blend of ancient texts, modern astronomy, and math magic makes history alive! 📖🚀 Questions? Dive deeper! 🔍")
 
-# Section 1: Yuga Timeline - Enhanced! 📅
+# Section 1: Yuga Timeline - Enhanced with numerical years! 📅
 st.header("Yuga Cycle Timeline: Visual Cosmic Journey! 📅✨🔄😄")
-st.write("Zoom through time with emojis galore! 🕰️🎨 Current spot marked – feel the vibes! 🌟")
+st.write("Zoom through time with emojis galore! 🕰️🎨 Current spot marked – feel the vibes! 🌟 (BCE years negative for epic scale!)")
 
 fig, ax = plt.subplots(figsize=(12, 5))
-ax.plot(df['Parsed Date'], [1] * len(df), 'o-', color='purple')
+ax.plot(df['Year Num'], [1] * len(df), 'o-', color='purple')
 ax.set_yticks([])
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y %b %d'))
-ax.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=10))
 for i, row in df.iterrows():
-    ax.text(row['Parsed Date'], 1.05, f"{yuga_emojis.get(row['Yuga Phase'], '🔄')} {row['Yuga Phase']}", rotation=45, ha='right', va='bottom')
+    ax.text(row['Year Num'], 1.05, f"{yuga_emojis.get(row['Yuga Phase'], '🔄')} {row['Yuga Phase']}", rotation=45, ha='right', va='bottom')
 plt.title("Yuga Cycle Timeline 🌟💫🎉")
-plt.xlabel("Date (BCE/CE) ⏳😎")
+plt.xlabel("Year (BCE negative, CE positive) ⏳😎")
 st.pyplot(fig)
 
 # Interactive Date Checker with spinner animation 🔍
@@ -166,13 +166,10 @@ with col3:
 
 if st.button("Zap to Yuga! 🔮💥"):
     with st.spinner("Warping through cosmic time... ⏳✨🚀"):
-        try:
-            user_date = datetime(year, month, day)
-            yuga_phase, emoji = find_yuga(user_date)
-            st.success(f"Whoosh! On {user_date.strftime('%Y-%m-%d')}, you're in **{yuga_phase}** {emoji}! 🎉💥 Epic era alert! 😄")
-            st.balloons()  # Animation on success! 🎈
-        except ValueError:
-            st.error("Date glitch! Check month/day. 📅❌ Try again! 😅")
+        user_year_num = year + ((month - 1) / 12 + day / 365.25) if year > 0 else year - ((month - 1) / 12 + day / 365.25)
+        yuga_phase, emoji = find_yuga(user_year_num)
+        st.success(f"Whoosh! On {year}-{month:02d}-{day:02d}, you're in **{yuga_phase}** {emoji}! 🎉💥 Epic era alert! 😄")
+        st.balloons()  # Animation on success! 🎈
 
 # Section 2: Cultural Comparisons with Images - added Zuni! 🌍
 st.header("Global Cosmic Party: Cultural Comparisons! 🌍🤝🎭✨😄")
@@ -221,8 +218,8 @@ if st.button("Blast a Fact! 🌟🚀"):
 # Birth Year Interactive 👶
 st.header("Birth Yuga Quest: Your Origin Story! 👶⏳✨😎")
 user_birth_year = st.slider("Slide to your birth year: 📅🎂", 1900, 2100, 2000)
-birth_date = datetime(user_birth_year, 1, 1)  # Approximate
-yuga_phase, emoji = find_yuga(birth_date)
+user_birth_year_num = user_birth_year  # Approximate, no fractional needed for year-only
+yuga_phase, emoji = find_yuga(user_birth_year_num)
 st.write(f"Zap! Born in {user_birth_year}? Your cosmic home: **{yuga_phase}** {emoji}! BCE? Use date checker. 🕰️😄 Destiny unlocked! 🔑🌟")
 
 st.write("Launch this cosmic app with `streamlit run app.py` – explore, learn, and vibe! 🌈🚀😄 Integrated research, new sections, emojis everywhere – pure fun! 🎊💫🔮")
